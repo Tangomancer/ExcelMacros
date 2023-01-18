@@ -139,3 +139,145 @@ Public Function LTrimZeros(CellValue)
  End Function
 
 
+Sub FormatTimestamp()
+    Selection.NumberFormat = "yyyy/mm/dd hh:mm:ss"
+End Sub
+
+
+Sub NumberToText()
+On Error GoTo Err_NumberToText
+
+    Dim rCell As Range
+    Dim t, rCount As Long
+    Dim s As Variant            'temporary cell value
+    Dim strNrLength As Long     'desired length of string
+    Dim strTrimLength As Long   'lengthh if original cell content exceeds strNrLength
+    Dim oldStatusbar As Boolean
+    
+    'Ask length of number including leading zero's
+    strNrLength = InputBox("Gewenste lengte van nummer met voorloopnullen?", "Voer in")
+    
+    
+    rCount = Selection.Cells.Count
+    t = 0
+    oldStatusbar = Application.DisplayStatusBar
+    Application.DisplayStatusBar = True
+    Application.StatusBar = "Nrs completed: " & t
+    
+    Application.Calculation = xlCalculationManual
+    
+    Application.ScreenUpdating = False
+    
+    For Each rCell In Selection
+        t = t + 1
+        
+        If Not rCell.HasFormula Then
+            'first remove leading 0, necessary for values already longer than strNrLength including the leading 0
+            s = rCell.Value
+            While Left(s, 1) = "0" And s <> ""
+                s = Mid(s, 2)
+            Wend
+            'set result length to the maximum of the actual length of s (without leading 0) or strNrLength
+            If Len(s) > strNrLength Then
+                strTrimLength = Len(s)
+            Else
+                strTrimLength = strNrLength
+            End If
+            rCell.NumberFormat = "@"                                     'sets cell format as text
+            rCell = Right(String(strNrLength, "0") & rCell.Value, strTrimLength)
+        End If
+        
+        If t Mod 1000 = 0 Then
+            Application.ScreenUpdating = True
+            Application.StatusBar = "Nrs completed: " & Format(t, "#,##0") & " of " & Format(rCount, "#,##0")
+            Application.ScreenUpdating = False
+        End If
+        
+    Next rCell
+    
+    Application.Calculation = xlCalculationAutomatic
+    
+    Application.StatusBar = False
+    Application.DisplayStatusBar = oldStatusbar
+
+   
+Exit_NumberToText:
+    
+    Application.Calculation = xlCalculationAutomatic
+    Application.StatusBar = oldStatusbar
+    Application.ScreenUpdating = True
+    Exit Sub
+
+Err_NumberToText:
+    Application.ScreenUpdating = True
+    MsgBox "Er gaat iets fout " & Err.Number & ": " & Err.Description
+    Application.ScreenUpdating = False
+    Resume Exit_NumberToText
+    
+End Sub
+
+
+Sub HighlightStrings()
+    Dim xHStr As String, xStrTmp As String
+    Dim xHInt As Integer
+    Dim xHStrLen As Long, xCount As Long, I As Long
+    Dim xCell As Range
+    Dim xArr
+    On Error Resume Next
+    xHStr = Application.InputBox("What is the string to highlight:", "Please enter...", , , , , , 2)
+    xHInt = Application.InputBox("What is the color to use (e.g: 3=red, 4=green, 5=blue, 6=yellow, 7=magenta):", "Please enter...", 3, , , , , 1)
+    If TypeName(xHStr) <> "String" Then Exit Sub
+    Application.ScreenUpdating = False
+        xHStrLen = Len(xHStr)
+        For Each xCell In Selection
+            xArr = Split(xCell.Value, xHStr)
+            xCount = UBound(xArr)
+            If xCount > 0 Then
+                xStrTmp = ""
+                For I = 0 To xCount - 1
+                    xStrTmp = xStrTmp & xArr(I)
+                    xCell.Characters(Len(xStrTmp) + 1, xHStrLen).Font.ColorIndex = xHInt
+                    xStrTmp = xStrTmp & xHStr
+                Next
+            End If
+        Next
+    Application.ScreenUpdating = True
+End Sub
+
+
+Sub ResizeAllChartObjects()
+'Apply Activechart sizes for both chart and plotarea to all
+'other charts on this page.
+'
+    Dim objDefaultChart As Chart
+    Dim objChart As ChartObject
+    Dim intIndex As Integer
+     
+    On Error Resume Next
+    If ActiveSheet.ChartObjects.Count > 1 Then
+        ' only bother if there are more than 1 chartobject
+        Set objDefaultChart = ActiveChart
+        If Not (objDefaultChart Is Nothing) Then
+            For intIndex = 1 To ActiveSheet.ChartObjects.Count
+                Set objChart = ActiveSheet.ChartObjects(intIndex)
+                If objChart.Name = objDefaultChart.Name Then
+                    ' This chart is already correct
+                Else
+                    With objChart
+                        .Width = objDefaultChart.Parent.Width
+                        .Height = objDefaultChart.Parent.Height
+                        With .Chart.PlotArea
+                            .Width = objDefaultChart.PlotArea.Width
+                            .Height = objDefaultChart.PlotArea.Height
+                            .Left = (objDefaultChart.Parent.Width - objDefaultChart.PlotArea.Width) / 2
+                            .Top = (objDefaultChart.Parent.Height - objDefaultChart.PlotArea.Height) / 2
+                        End With
+                    End With
+                End If
+            Next
+        Else
+            ' No Active chart
+            MsgBox "Please select chart on which to base sizes", vbExclamation
+        End If
+    End If
+End Sub
