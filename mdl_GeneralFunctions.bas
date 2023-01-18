@@ -1,5 +1,18 @@
-Attribute VB_Name = "mdl_GeneralFunctions"
 Option Explicit
+
+' functions and subs in this module:
+'
+'  Function ConcatRange(RowRange As Range, Optional strSeparator As String) As String
+'  Function LongestCommonSubstring(S1 As String, S2 As String) As String
+'  Public Function LTrimZeros(CellValue)
+'  Sub FormatTimestamp()
+'  Sub HighlightStrings()
+'  Sub NumberToText()
+'  Sub QuickSmallLayout()
+'  Sub ResizeAllChartObjects()
+'  Sub SheetNames()
+'  Sub SimplePivotLayout()
+'  Sub StringExistsInFile()
 
 
 Function ConcatRange(RowRange As Range, Optional strSeparator As String) As String
@@ -25,9 +38,6 @@ Function ConcatRange(RowRange As Range, Optional strSeparator As String) As Stri
 End Function
 
 
-
-
-
 Sub SimplePivotLayout()
     On Error GoTo Err_SimplePivotLayout
     Dim err_count As Integer
@@ -36,7 +46,6 @@ Sub SimplePivotLayout()
     Dim oldStatusbar As Boolean
     Dim PT As PivotTable
     Dim PTF As PivotField
-    
     Dim PivotName As String
     
     Set PT = ActiveCell.PivotTable
@@ -45,8 +54,6 @@ Sub SimplePivotLayout()
         oldStatusbar = Application.DisplayStatusBar
         Application.DisplayStatusBar = True
         Application.StatusBar = "Applying simple layout to pivot table"
-    
-    
         Application.ScreenUpdating = False
         With PT
             .InGridDropZones = True
@@ -92,6 +99,7 @@ Sub SheetNames()
     For i = 1 To Sheets.Count
         Cells(i, 1) = Sheets(i).Name
     Next i
+
 End Sub
 
 
@@ -116,7 +124,9 @@ Function LongestCommonSubstring(S1 As String, S2 As String) As String
       End If
     Next
   Next
-  LongestCommonSubstring = Mid(S1, MaxSubstrStart, MaxLenFound)
+
+LongestCommonSubstring = Mid(S1, MaxSubstrStart, MaxLenFound)
+
 End Function
 
 
@@ -280,4 +290,76 @@ Sub ResizeAllChartObjects()
             MsgBox "Please select chart on which to base sizes", vbExclamation
         End If
     End If
+End Sub
+
+
+Sub QuickSmallLayout()
+On Error GoTo Err_QuickSmallLayout
+    
+    Dim c As Range
+    
+    Application.ScreenUpdating = False
+    Cells.Select
+    With Selection.Font
+        .Name = "Tahoma"
+        .Size = 8
+    End With
+    Cells.Select
+    Selection.ColumnWidth = 1
+    Cells.EntireColumn.AutoFit
+    Cells.EntireRow.AutoFit
+    
+    For Each c In Rows("1:1").Cells
+        If c.Value = "hide" Then
+            c.EntireColumn.Hidden = True
+        End If
+    Next c
+    
+    Range("A1").Select
+    
+Exit_QuickSmallLayout:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+Err_QuickSmallLayout:
+    Application.ScreenUpdating = True
+    MsgBox "Er gaat iets fout " & Err.Number & ": " & Err.Description
+    Application.ScreenUpdating = False
+    Resume Exit_QuickSmallLayout
+
+End Sub
+
+        
+Sub StringExistsInFile()
+    Dim theString As String
+    Dim path As String
+    Dim StrFile As String
+    Dim fso As New FileSystemObject
+    Dim file As TextStream
+    Dim line As String
+
+    theString = "DWH_INT"
+    path = "E:\Reports to Production\01 Gereed\"
+    StrFile = Dir(path & "*.rdl")
+
+    Do While StrFile <> ""
+
+        'Find TheString in the file
+        'If found, debug.print and exit loop
+
+        Set file = fso.OpenTextFile(path & StrFile)
+        Do While Not file.AtEndOfLine
+            line = file.ReadLine
+            If InStr(1, line, theString, vbTextCompare) > 0 Then
+                Debug.Print StrFile
+                'Exit Do
+            End If
+        Loop
+
+        file.Close
+        Set file = Nothing
+        Set fso = Nothing
+
+        StrFile = Dir()
+    Loop
 End Sub
